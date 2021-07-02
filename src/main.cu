@@ -30,8 +30,8 @@ int main(int argc, char **argv)
             printf("Unable to load image '%s', please try a different file.\n", config.input_file);
             return EXIT_FAILURE;
         }
-        if (user_image.channels != 3) {
-            printf("Only 3 channel images are supported, please try a different file.\n");
+        if (user_image.channels != CHANNELS) {
+            printf("Only %d channel images are supported, please try a different file.\n", CHANNELS);
             return EXIT_FAILURE;
         }
     }
@@ -59,13 +59,27 @@ int main(int argc, char **argv)
             // return EXIT_FAILURE;
         }
     }
-    free(input_image.data);
 
     // Create result for validation
     Image validation_image;
     unsigned char validation_global_image_average[4] = { 0,0,0,0 };
     {
-        // TODO
+        const unsigned int TILES_X = input_image.width / TILE_SIZE;
+        const unsigned int TILES_Y = input_image.height / TILE_SIZE;
+        // Copy metadata
+        validation_image.width = input_image.width;
+        validation_image.height = input_image.height;
+        // Allocate memory
+        validation_image.data = (unsigned char*)malloc(input_image.width * input_image.height * input_image.channels * sizeof(unsigned char));
+        unsigned long long* validation_mosaic_sum = (unsigned long long*)malloc(TILES_X * TILES_Y * input_image.channels * sizeof(unsigned long long));
+        unsigned char* validation_compact_mosaic = (unsigned char*)malloc(TILES_X * TILES_Y * input_image.channels * sizeof(unsigned char));
+        // Run algorithm
+        skip_tile_sum(&input_image, validation_mosaic_sum);
+        skip_compact_mosaic(TILES_X, TILES_Y, validation_mosaic_sum, validation_compact_mosaic, validation_global_image_average);
+        skip_broadcast(&input_image, validation_compact_mosaic, &validation_image);
+        // Free temporary resources
+        free(validation_mosaic_sum);
+        free(validation_compact_mosaic);
     }
        
     Image output_image;
@@ -89,7 +103,7 @@ int main(int argc, char **argv)
             if (TOTAL_RUNS > 1)
                 printf("\r%d/%d", runs + 1, TOTAL_RUNS);
             memset(&output_image, 0, sizeof(Image));
-            output_image.data = (unsigned char*)malloc(input_image.width * input_image.height);
+            output_image.data = (unsigned char*)malloc(input_image.width * input_image.height * input_image.channels * sizeof(unsigned char));
             // Run Adaptive Histogram algorithm
             CUDA_CALL(cudaEventRecord(startT));
             CUDA_CALL(cudaEventSynchronize(startT));
@@ -201,12 +215,15 @@ int main(int argc, char **argv)
         int close_pixels = 0;
         if (output_image.data) {
             for (int i = 0; i < s_size; ++i) {
-                if (output_image.data[i] != validation_image.data[i]) {
-                    // Give a +-1 threshold for error (incase fast-math triggers a small difference in places)
-                    if (output_image.data[i]+1 == validation_image.data[i] || output_image.data[i]-1 == validation_image.data[i]) {
-                        close_pixels++;
-                    } else {
-                        bad_pixels++;
+                for (int ch = 0; ch < validation_image.channels; ++ch) {
+                    if (output_image.data[i * validation_image.channels + ch] != validation_image.data[i * validation_image.channels + ch]) {
+                        // Give a +-1 threshold for error (incase fast-math triggers a small difference in places)
+                        if (output_image.data[i] + 1 == validation_image.data[i] || output_image.data[i] - 1 == validation_image.data[i]) {
+                            close_pixels++;
+                        } else {
+                            bad_pixels++;
+                            break;
+                        }
                     }
                 }
             }
@@ -215,7 +232,7 @@ int main(int argc, char **argv)
             printf("\tImage pixels: Fail, (output_image->data not set)\n");
         }
         int bad_global_average = 0;
-        for (int i = 0; i < 4; ++i){
+        for (int i = 0; i < validation_image.channels; ++i){
             if (global_image_average[i] != validation_global_image_average[i]) {
                 bad_global_average = 1;
                 break;

@@ -72,7 +72,7 @@ void cpu_stage2(unsigned char* output_global_average) {
     }
     // Reduce the whole image sum to whole image average for the return value
     for (int ch = 0; ch < cpu_input_image.channels; ++ch) {
-        output_global_average[ch] = (unsigned char)(whole_image_sum[ch] / (TILE_PIXELS));
+        output_global_average[ch] = (unsigned char)(whole_image_sum[ch] / (cpu_TILES_X * cpu_TILES_Y));
     }
 #ifdef VALIDATION
     validate_compact_mosaic(cpu_TILES_X, cpu_TILES_Y, cpu_mosaic_sum, cpu_mosaic_value, output_global_average);
@@ -104,7 +104,8 @@ void cpu_end(Image *output_image) {
     // Store return value
     output_image->width = cpu_output_image.width;
     output_image->height = cpu_output_image.height;
-    memcpy(output_image->data, cpu_output_image.data, output_image->width * output_image->height * sizeof(unsigned char));
+    output_image->channels = cpu_output_image.channels;
+    memcpy(output_image->data, cpu_output_image.data, output_image->width * output_image->height * output_image->channels * sizeof(unsigned char));
     // Release allocations
     free(cpu_output_image.data);
     free(cpu_input_image.data);

@@ -4,7 +4,7 @@
 #include "config.h"
 
 /**
- * This structure represents a single channel image (e.g. greyscale)
+ * This structure represents a multiple channel image (e.g. rgb, rgba)
  * It contains the data required by the stb image read/write functions
  */
 struct Image {
@@ -25,27 +25,5 @@ struct Image {
     int channels;
 };
 typedef struct Image Image;
-/**
- * This structure represents a histograms used throughout the algorithm
- * The type is unsigned int
- */
-struct Histogram_uint {
-    /**
-     * PIXEL_RANGE bins for histogram data
-     */
-    unsigned int histogram[PIXEL_RANGE];
-};
-typedef struct Histogram_uint Histogram_uint;
-/**
- * This structure represents a histograms used throughout the algorithm
- * The type is unsigned char
- */
-struct Histogram_uchar {
-    /**
-     * PIXEL_RANGE bins for histogram data
-     */
-    unsigned char histogram[PIXEL_RANGE];
-};
-typedef struct Histogram_uchar Histogram_uchar;
 
 #endif  // __common_h__
