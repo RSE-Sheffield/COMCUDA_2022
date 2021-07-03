@@ -48,7 +48,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 11.2.props" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 11.1.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -66,6 +66,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(ProjectDir)</AdditionalIncludeDirectories>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -74,6 +75,7 @@
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
+      <CodeGeneration>compute_61,sm_61</CodeGeneration>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -84,6 +86,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(ProjectDir)</AdditionalIncludeDirectories>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -94,10 +97,11 @@
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
+      <CodeGeneration>compute_61,sm_61</CodeGeneration>
     </CudaCompile>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 11.2.targets" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 11.1.targets" />
   </ImportGroup>
 </Project>
