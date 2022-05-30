@@ -122,6 +122,7 @@ int main(int argc, char **argv)
             if (TOTAL_RUNS > 1)
                 printf("\r%d/%d", runs + 1, TOTAL_RUNS);
             memset(&output_image, 0, sizeof(Image));
+            memset(global_image_average, 0, 4 * sizeof(unsigned char));
             output_image.data = (unsigned char*)malloc(input_image.width * input_image.height * input_image.channels * sizeof(unsigned char));
             memset(output_image.data, 0, input_image.width * input_image.height * input_image.channels * sizeof(unsigned char));
             // Run Adaptive Histogram algorithm
