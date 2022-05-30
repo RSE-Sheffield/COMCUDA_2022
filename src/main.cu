@@ -123,6 +123,7 @@ int main(int argc, char **argv)
                 printf("\r%d/%d", runs + 1, TOTAL_RUNS);
             memset(&output_image, 0, sizeof(Image));
             output_image.data = (unsigned char*)malloc(input_image.width * input_image.height * input_image.channels * sizeof(unsigned char));
+            memset(output_image.data, 0, input_image.width * input_image.height * input_image.channels * sizeof(unsigned char));
             // Run Adaptive Histogram algorithm
             CUDA_CALL(cudaEventRecord(startT));
             CUDA_CALL(cudaEventSynchronize(startT));
@@ -232,7 +233,7 @@ int main(int argc, char **argv)
         int s_size = v_size < o_size ? v_size : o_size;
         int bad_pixels = 0;
         int close_pixels = 0;
-        if (output_image.data) {
+        if (output_image.data && s_size) {
             for (int i = 0; i < s_size; ++i) {
                 for (int ch = 0; ch < validation_image.channels; ++ch) {
                     if (output_image.data[i * validation_image.channels + ch] != validation_image.data[i * validation_image.channels + ch]) {
@@ -253,7 +254,7 @@ int main(int argc, char **argv)
                 printf(CONSOLE_GREEN "Pass" CONSOLE_RESET "\n");
             }
         } else {
-            printf("\tImage pixels: " CONSOLE_RED "Fail" CONSOLE_RESET ", (output_image->data not set)\n");
+            printf("\tImage pixels: " CONSOLE_RED "Fail" CONSOLE_RESET "\n");
         }
         int bad_global_average = 0;
         for (int i = 0; i < validation_image.channels; ++i){
