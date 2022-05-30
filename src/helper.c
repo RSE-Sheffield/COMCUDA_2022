@@ -7,6 +7,10 @@
 
 #include "config.h"
 
+#define CONSOLE_RED "\x1b[91m"
+#define CONSOLE_GREEN "\x1b[92m"
+#define CONSOLE_YELLOW "\x1b[93m"
+#define CONSOLE_RESET "\x1b[39m"
 
 int skip_tile_sum_used = -1;
 void validate_tile_sum(const Image* input_image, unsigned long long* test_mosaic_sum) {
@@ -30,9 +34,9 @@ void validate_tile_sum(const Image* input_image, unsigned long long* test_mosaic
         }
     }
     if (bad_tiles) {
-        fprintf(stderr, "validate_tile_sum() found %d/%u tiles contain atleast 1 invalid colour sum.\n", bad_tiles, TILES_X * TILES_Y);
+        fprintf(stderr, "validate_tile_sum() " CONSOLE_RED "found %d/%u tiles contain atleast 1 invalid colour sum." CONSOLE_RESET "\n", bad_tiles, TILES_X * TILES_Y);
     } else {
-        fprintf(stderr, "validate_tile_sum() found no errors!\n");
+        fprintf(stderr, "validate_tile_sum() " CONSOLE_GREEN "found no errors!" CONSOLE_RESET "\n");
     }
     // Release internal mosaic sum
     free(mosaic_sum);
@@ -88,13 +92,13 @@ void validate_compact_mosaic(unsigned int TILES_X, unsigned int TILES_Y,
             ++bad_global_averages;
     }
     if (bad_tiles) {
-        fprintf(stderr, "validate_compact_mosaic() found %u/%u incorrect mosaic colours.\n", bad_tiles, TILES_X * TILES_Y);
+        fprintf(stderr, "validate_compact_mosaic() " CONSOLE_RED "found %u/%u incorrect mosaic colours." CONSOLE_RESET "\n", bad_tiles, TILES_X * TILES_Y);
     }
     if (bad_global_averages) {
-        fprintf(stderr, "validate_compact_mosaic() found %u/%d channels of the global pixel average were incorrect.\n", bad_global_averages, CHANNELS);
+        fprintf(stderr, "validate_compact_mosaic() " CONSOLE_RED "found %u/%d channels of the global pixel average were incorrect." CONSOLE_RESET "\n", bad_global_averages, CHANNELS);
     }
     if (!bad_tiles && !bad_global_averages) {
-        fprintf(stderr, "validate_compact_mosaic() found no errors!\n");
+        fprintf(stderr, "validate_compact_mosaic() " CONSOLE_GREEN "found no errors!" CONSOLE_RESET "\n");
     }
     // Release internal buffers
     free(compact_mosaic);
@@ -133,9 +137,9 @@ void validate_broadcast(const Image* input_image, unsigned char* compact_mosaic,
         }
     }
     if (bad_pixels) {
-        fprintf(stderr, "validate_broadcast() found %d/%u incorrect final pixels.\n", bad_pixels, input_image->width * input_image->height);
+        fprintf(stderr, "validate_broadcast() " CONSOLE_RED "found %d/%u incorrect final pixels." CONSOLE_RESET "\n", bad_pixels, input_image->width * input_image->height);
     } else {
-        fprintf(stderr, "validate_broadcast() found no errors!\n");
+        fprintf(stderr, "validate_broadcast() " CONSOLE_GREEN "found no errors!" CONSOLE_RESET "\n");
     }
     // Release internal buffers
     free(output_image.data);
