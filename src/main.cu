@@ -166,19 +166,19 @@ int main(int argc, char **argv)
             case CUDA:
                 {
                     cuda_begin(&input_image);
-                    CUDA_CHECK("cuda_begin()");
+                    CUDA_CHECK();
                     CUDA_CALL(cudaEventRecord(initT));
                     CUDA_CALL(cudaEventSynchronize(initT));
                     cuda_stage1();
-                    CUDA_CHECK("cuda_stage1()");
+                    CUDA_CHECK();
                     CUDA_CALL(cudaEventRecord(stage1T));
                     CUDA_CALL(cudaEventSynchronize(stage1T));
                     cuda_stage2(global_image_average);
-                    CUDA_CHECK("cuda_stage2()");
+                    CUDA_CHECK();
                     CUDA_CALL(cudaEventRecord(stage2T));
                     CUDA_CALL(cudaEventSynchronize(stage2T));
                     cuda_stage3();
-                    CUDA_CHECK("cuda_stage3()");
+                    CUDA_CHECK();
                     CUDA_CALL(cudaEventRecord(stage3T));
                     CUDA_CALL(cudaEventSynchronize(stage3T));
                     cuda_end(&output_image);
