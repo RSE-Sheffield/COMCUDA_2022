@@ -64,7 +64,8 @@ int main(int argc, char **argv)
         input_image.data = (unsigned char *)malloc(input_image.width * input_image.height * input_image.channels * sizeof(unsigned char));
         const int user_row_width = user_image.width * user_image.channels;
         const int input_row_width = input_image.width * input_image.channels;
-        // Copy cropped data across
+        // Copy cropped data across (use OpenMP in an attempt to trigger OpenMPs hidden init cost)
+#pragma omp parallel for 
         for (int y = 0; y < input_image.height; ++y) {
             memcpy(input_image.data + y*input_row_width, user_image.data + y*user_row_width, input_row_width);
         }
