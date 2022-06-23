@@ -111,4 +111,9 @@ void cpu_end(Image *output_image) {
     free(cpu_input_image.data);
     free(cpu_mosaic_value);
     free(cpu_mosaic_sum);
+    // Return ptrs to nullptr
+    cpu_output_image.data = 0;
+    cpu_input_image.data = 0;
+    cpu_mosaic_value = 0;
+    cpu_mosaic_sum = 0;
 }

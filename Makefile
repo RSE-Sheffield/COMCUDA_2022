@@ -2,7 +2,7 @@
 # ------------------ #
 
 # The name of the generated executable file
-EXECUTABLE=AdaptiveHistogramOptimisation
+EXECUTABLE=Mosaic
 
 # Directory names used for incremental build files, executable files, and the executable type (release/debug)
 BUILD_DIR := build

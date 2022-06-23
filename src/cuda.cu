@@ -98,4 +98,10 @@ void cuda_end(Image *output_image) {
     CUDA_CALL(cudaFree(d_mosaic_sum));
     CUDA_CALL(cudaFree(d_input_image_data));
     CUDA_CALL(cudaFree(d_output_image_data));
+    // Return ptrs to nullptr
+    cuda_input_image.data = nullptr;
+    d_mosaic_value = nullptr;
+    d_mosaic_sum = nullptr;
+    d_input_image_data = nullptr;
+    d_output_image_data = nullptr;
 }

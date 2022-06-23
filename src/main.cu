@@ -3,6 +3,16 @@
 #include <string.h>
 #include <cuda_runtime.h>
 
+#ifdef _MSC_VER
+#include <windows.h>
+#include <WinCon.h>
+#endif
+
+#define CONSOLE_RED "\x1b[91m"
+#define CONSOLE_GREEN "\x1b[92m"
+#define CONSOLE_YELLOW "\x1b[93m"
+#define CONSOLE_RESET "\x1b[39m"
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "external/stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -18,6 +28,15 @@
 
 int main(int argc, char **argv)
 {
+#ifdef _MSC_VER
+    {
+        HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+        DWORD consoleMode;
+        GetConsoleMode(hConsole, &consoleMode);
+        consoleMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;  // Enable support for ANSI colours (Windows 10+)
+        SetConsoleMode(hConsole, consoleMode);
+    }
+#endif
     // Parse args
     Config config;
     parse_args(argc, argv, &config);
@@ -45,7 +64,8 @@ int main(int argc, char **argv)
         input_image.data = (unsigned char *)malloc(input_image.width * input_image.height * input_image.channels * sizeof(unsigned char));
         const int user_row_width = user_image.width * user_image.channels;
         const int input_row_width = input_image.width * input_image.channels;
-        // Copy cropped data across
+        // Copy cropped data across (use OpenMP in an attempt to trigger OpenMPs hidden init cost)
+#pragma omp parallel for 
         for (int y = 0; y < input_image.height; ++y) {
             memcpy(input_image.data + y*input_row_width, user_image.data + y*user_row_width, input_row_width);
         }
@@ -103,7 +123,9 @@ int main(int argc, char **argv)
             if (TOTAL_RUNS > 1)
                 printf("\r%d/%d", runs + 1, TOTAL_RUNS);
             memset(&output_image, 0, sizeof(Image));
+            memset(global_image_average, 0, 4 * sizeof(unsigned char));
             output_image.data = (unsigned char*)malloc(input_image.width * input_image.height * input_image.channels * sizeof(unsigned char));
+            memset(output_image.data, 0, input_image.width * input_image.height * input_image.channels * sizeof(unsigned char));
             // Run Adaptive Histogram algorithm
             CUDA_CALL(cudaEventRecord(startT));
             CUDA_CALL(cudaEventSynchronize(startT));
@@ -145,19 +167,19 @@ int main(int argc, char **argv)
             case CUDA:
                 {
                     cuda_begin(&input_image);
-                    CUDA_CHECK("cuda_begin()");
+                    CUDA_CHECK();
                     CUDA_CALL(cudaEventRecord(initT));
                     CUDA_CALL(cudaEventSynchronize(initT));
                     cuda_stage1();
-                    CUDA_CHECK("cuda_stage1()");
+                    CUDA_CHECK();
                     CUDA_CALL(cudaEventRecord(stage1T));
                     CUDA_CALL(cudaEventSynchronize(stage1T));
                     cuda_stage2(global_image_average);
-                    CUDA_CHECK("cuda_stage2()");
+                    CUDA_CHECK();
                     CUDA_CALL(cudaEventRecord(stage2T));
                     CUDA_CALL(cudaEventSynchronize(stage2T));
                     cuda_stage3();
-                    CUDA_CHECK("cuda_stage3()");
+                    CUDA_CHECK();
                     CUDA_CALL(cudaEventRecord(stage3T));
                     CUDA_CALL(cudaEventSynchronize(stage3T));
                     cuda_end(&output_image);
@@ -206,14 +228,14 @@ int main(int argc, char **argv)
     // Validate and report    
     {
         printf("\rValidation Status: \n");
-        printf("\tImage width: %s\n", validation_image.width == output_image.width ? "Pass" : "Fail");
-        printf("\tImage height: %s\n", validation_image.height == output_image.height ? "Pass" : "Fail");
+        printf("\tImage width: %s" CONSOLE_RESET "\n", validation_image.width == output_image.width ? CONSOLE_GREEN "Pass" : CONSOLE_RED "Fail");
+        printf("\tImage height: %s" CONSOLE_RESET "\n", validation_image.height == output_image.height ? CONSOLE_GREEN "Pass" : CONSOLE_RED "Fail");
         int v_size = validation_image.width * validation_image.height;
         int o_size = output_image.width * output_image.height;
         int s_size = v_size < o_size ? v_size : o_size;
         int bad_pixels = 0;
         int close_pixels = 0;
-        if (output_image.data) {
+        if (output_image.data && s_size) {
             for (int i = 0; i < s_size; ++i) {
                 for (int ch = 0; ch < validation_image.channels; ++ch) {
                     if (output_image.data[i * validation_image.channels + ch] != validation_image.data[i * validation_image.channels + ch]) {
@@ -227,9 +249,14 @@ int main(int argc, char **argv)
                     }
                 }
             }
-            printf("\tImage pixels: %s (%d/%u wrong)\n", bad_pixels ?  "Fail": "Pass", bad_pixels, o_size);
+            printf("\tImage pixels: ");
+            if (bad_pixels) {
+                printf(CONSOLE_RED "Fail" CONSOLE_RESET " (%d/%u wrong)\n", bad_pixels, o_size);
+            } else {
+                printf(CONSOLE_GREEN "Pass" CONSOLE_RESET "\n");
+            }
         } else {
-            printf("\tImage pixels: Fail, (output_image->data not set)\n");
+            printf("\tImage pixels: " CONSOLE_RED "Fail" CONSOLE_RESET "\n");
         }
         int bad_global_average = 0;
         for (int i = 0; i < validation_image.channels; ++i){
@@ -238,13 +265,13 @@ int main(int argc, char **argv)
                 break;
             }
         }
-        printf("\tGlobal Image Average Pixel Value: %s\n", bad_global_average ? "Fail": "Pass");
+        printf("\tGlobal Image Average Pixel Value: %s" CONSOLE_RESET "\n", bad_global_average ? CONSOLE_RED "Fail" : CONSOLE_GREEN "Pass");
     }
 
     // Export output image
     if (config.output_file) {
         if (!stbi_write_png(config.output_file, output_image.width, output_image.height, output_image.channels, output_image.data, output_image.width * output_image.channels)) {
-            printf("Unable to save image output to %s.\n", config.output_file);
+            printf(CONSOLE_YELLOW "Unable to save image output to %s.\n" CONSOLE_RESET, config.output_file);
             // return EXIT_FAILURE;
         }
     }
@@ -261,14 +288,14 @@ int main(int argc, char **argv)
         printf("Using GPU: %s\n", props.name);
     }
 #ifdef _DEBUG
-    printf("Code built as DEBUG, timing results are invalid!\n");
+    printf(CONSOLE_YELLOW "Code built as DEBUG, timing results are invalid!\n" CONSOLE_RESET);
 #endif
     printf("Init: %.3fms\n", timing_log.init);
-    printf("Stage 1: %.3fms%s\n", timing_log.stage1, getStage1SkipUsed() ? " (helper method used, time invalid)" : "");
-    printf("Stage 2: %.3fms%s\n", timing_log.stage2, getStage2SkipUsed() ? " (helper method used, time invalid)" : "");
-    printf("Stage 3: %.3fms%s\n", timing_log.stage3, getStage3SkipUsed() ? " (helper method used, time invalid)" : "");
+    printf("Stage 1: %.3fms%s\n", timing_log.stage1, getStage1SkipUsed() ? CONSOLE_YELLOW " (helper method used, time invalid)" CONSOLE_RESET : "");
+    printf("Stage 2: %.3fms%s\n", timing_log.stage2, getStage2SkipUsed() ? CONSOLE_YELLOW " (helper method used, time invalid)" CONSOLE_RESET : "");
+    printf("Stage 3: %.3fms%s\n", timing_log.stage3, getStage3SkipUsed() ? CONSOLE_YELLOW " (helper method used, time invalid)" CONSOLE_RESET : "");
     printf("Free: %.3fms\n", timing_log.cleanup);
-    printf("Total: %.3fms%s\n", timing_log.total, getSkipUsed() ? " (helper method used, time invalid)" : "");
+    printf("Total: %.3fms%s\n", timing_log.total, getSkipUsed() ? CONSOLE_YELLOW " (helper method used, time invalid)" CONSOLE_RESET : "");
 
     // Cleanup
     cudaDeviceReset();

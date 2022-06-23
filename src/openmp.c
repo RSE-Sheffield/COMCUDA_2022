@@ -1,6 +1,10 @@
 #include "openmp.h"
 #include "helper.h"
 
+#include <stdlib.h>
+#include <string.h>
+#include <omp.h>
+
 void openmp_begin(const Image *input_image) {
     
 }
